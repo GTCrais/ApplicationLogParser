@@ -1,0 +1,28 @@
+{
+    "name": "gtcrais/application-log-parser",
+    "description": "Application Log Parser",
+    "keywords": ["Application Log Parser"],
+    "authors": [
+        {
+            "name": "Tomislav Modrić",
+            "email": "tomislav@gtcrais.net"
+        }
+    ],
+    "license": "MIT",
+    "require": {
+        "php": ">=7.0.0"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "GTCrais\\ApplicationLogParser\\": "src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "GTCrais\\ApplicationLogParser\\LogParserServiceProvider"
+            ]
+        }
+    }
+}
