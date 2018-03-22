@@ -27,7 +27,8 @@ Application Log Parser is a Laravel package for parsing various application logs
 
 ## Writing a custom platform log parser
 
-1. publish the Application Log Parser config file by running `php artisan vendor:publish --provider=GTCrais\ApplicationLogParser\LogParserServiceProvider`
+1. publish the Application Log Parser config file by running  
+`php artisan vendor:publish --provider=GTCrais\ApplicationLogParser\LogParserServiceProvider`
 2. write your log parser class. It must implement `GTCrais\ApplicationLogParser\Contracts\LogParserContract` and return a Collection of Log Entries
 3. finally, register your platform and its log parser in the config file:  
 ```php
@@ -43,7 +44,7 @@ For more details check out `GTCrais\ApplicationLogParser\Parsers\LaravelLogParse
 
 ## Usage examples
 
-```
+```php
 use GTCrais\ApplicationLogParser\Facades\LogParser;
 
 $logEntriesCollection = LogParser::get(); 
