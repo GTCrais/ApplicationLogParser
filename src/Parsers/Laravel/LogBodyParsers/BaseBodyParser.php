@@ -39,7 +39,7 @@ abstract class BaseBodyParser
 		$inAndLinePattern = '/^' . static::CONTEXT_IN_PATTERN . '$/';
 
 		$this->bodyData = $this->parseExceptionAndMessage($exceptionAndMessage, $delimiter, $pattern, $inAndLinePattern);
-		$this->bodyData['stackTraces'] = $this->parseStackTraces($stackTraces);
+		$this->bodyData['stack_traces'] = $this->parseStackTraces($stackTraces);
 		$this->setContentParsed();
 	}
 

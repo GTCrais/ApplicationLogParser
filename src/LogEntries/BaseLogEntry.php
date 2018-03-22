@@ -17,6 +17,9 @@ class BaseLogEntry
 	public $message;
 	public $in;
 	public $line;
+	public $user_id;
+	public $user_email;
+	public $stack_traces;
 	public $children;
 
 	public function __construct(array $data)

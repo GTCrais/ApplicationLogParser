@@ -47,7 +47,7 @@ class LogTypeThreeBodyParser extends BaseBodyParser
 
 			$bodyAndUserData = $this->parseExceptionData($exceptionData);
 			$this->bodyData = $bodyAndUserData['bodyData'];
-			$this->bodyData['stackTraces'] = $this->parseStackTraces($stackTraces);
+			$this->bodyData['stack_traces'] = $this->parseStackTraces($stackTraces);
 			$this->userData = $bodyAndUserData['userData'];
 			$this->setContentParsed();
 		}
