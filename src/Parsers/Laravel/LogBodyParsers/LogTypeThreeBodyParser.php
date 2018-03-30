@@ -41,13 +41,13 @@ class LogTypeThreeBodyParser extends BaseBodyParser
 		$this->logEntry = $laravelLogEntry;
 
 		if ($this->bodyCanBeParsed()) {
-			$stackTracesAndExceptionData = $this->getStackTracesAndExceptionData();
-			$stackTraces = Str::replaceLast('"}', '', rtrim($stackTracesAndExceptionData['stackTraces']));
-			$exceptionData = $stackTracesAndExceptionData['exceptionData'];
+			$stackTraceAndExceptionData = $this->getStackTraceAndExceptionData();
+			$stackTrace = Str::replaceLast('"}', '', rtrim($stackTraceAndExceptionData['stackTrace']));
+			$exceptionData = $stackTraceAndExceptionData['exceptionData'];
 
 			$bodyAndUserData = $this->parseExceptionData($exceptionData);
 			$this->bodyData = $bodyAndUserData['bodyData'];
-			$this->bodyData['stack_traces'] = $this->parseStackTraces($stackTraces);
+			$this->bodyData['stack_trace_entries'] = $this->parseStackTrace($stackTrace);
 			$this->userData = $bodyAndUserData['userData'];
 			$this->setContentParsed();
 		}
