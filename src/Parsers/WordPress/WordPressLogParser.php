@@ -1,36 +1,29 @@
 <?php
 
-namespace GTCrais\ApplicationLogParser\Parsers\Laravel;
+namespace GTCrais\ApplicationLogParser\Parsers\WordPress;
 
+use Carbon\Carbon;
 use GTCrais\ApplicationLogParser\Contracts\LogParserContract;
-use GTCrais\ApplicationLogParser\LogEntries\LaravelLogEntry;
-use GTCrais\ApplicationLogParser\Parsers\Laravel\LogBodyParsers\DefaultLogTypeBodyParser;
-use GTCrais\ApplicationLogParser\Parsers\Laravel\LogBodyParsers\LogTypeOneBodyParser;
-use GTCrais\ApplicationLogParser\Parsers\Laravel\LogBodyParsers\LogTypeThreeBodyParser;
-use GTCrais\ApplicationLogParser\Parsers\Laravel\LogBodyParsers\LogTypeTwoBodyParser;
-use GTCrais\ApplicationLogParser\Parsers\Laravel\LogBodyParsers\BaseBodyParser;
+use GTCrais\ApplicationLogParser\LogEntries\WordPressLogEntry;
+use GTCrais\ApplicationLogParser\Parsers\WordPress\LogBodyParsers\DefaultLogTypeBodyParser;
+use GTCrais\ApplicationLogParser\Parsers\WordPress\LogBodyParsers\LogTypeOneBodyParser;
+use GTCrais\ApplicationLogParser\Parsers\WordPress\LogBodyParsers\BaseBodyParser;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
-class LaravelLogParser implements LogParserContract
+class WordPressLogParser implements LogParserContract
 {
 	public $bodyParsers = [];
 	public $defaultBodyParser;
 
-	const LOG_DATE_PATTERN = "\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]";
-	const LOG_ENVIRONMENT_PATTERN = "(\w+)";
-	const LOG_LEVEL_PATTERN = "([A-Z]+)";
+	const LOG_DATE_PATTERN = "\[(\d{2}-[a-zA-Z]{3}-\d{4} \d{2}:\d{2}:\d{2}) (.*)\]";
+	const LOG_LEVEL_PATTERN = "(PHP ([a-zA-Z\s]+):)?";
 
 	public function __construct(
 		LogTypeOneBodyParser $logTypeOneBodyParser,
-		LogTypeTwoBodyParser $logTypeTwoBodyParser,
-		LogTypeThreeBodyParser $logTypeThreeBodyParser,
 		DefaultLogTypeBodyParser $defaultLogTypeBodyParser
 	) {
 		$this->bodyParsers = [
-			$logTypeOneBodyParser,
-			$logTypeTwoBodyParser,
-			$logTypeThreeBodyParser
+			$logTypeOneBodyParser
 		];
 
 		$this->defaultBodyParser = $defaultLogTypeBodyParser;
@@ -41,7 +34,6 @@ class LaravelLogParser implements LogParserContract
 		/** @var Collection $logEntries */
 		$logEntries = $this->getLogEntries(file_get_contents($logPath));
 		$logEntries = $this->parseLogEntryBodies($logEntries);
-		$logEntries = $this->setLogEntryChildren($logEntries);
 
 		return $logEntries;
 	}
@@ -102,27 +94,12 @@ class LaravelLogParser implements LogParserContract
 		$this->defaultBodyParser->reset();
 	}
 
-	protected function setLogEntryChildren(Collection $logEntries)
-	{
-		$parentKey = 0;
-
-		return $logEntries->each(function($entry, $key) use ($logEntries, &$parentKey) {
-			if (!$entry->is_child_entry) {
-				$parentKey = $key;
-			} else {
-				$logEntries[$parentKey]->children->push($entry);
-			}
-		})->filter(function($entry) {
-			return !$entry->is_child_entry;
-		});
-	}
-
 	protected function getLogEntries($logContent)
 	{
-		$headerSet = $dateSet = $envSet = $levelSet = $bodySet = [];
+		$headerSet = $dateSet = $timeZone = $levelSet = $bodySet = [];
 		$logEntries = collect([]);
 
-		$pattern = "/^" . self::LOG_DATE_PATTERN . "\s" . self::LOG_ENVIRONMENT_PATTERN. "\." . self::LOG_LEVEL_PATTERN . "\:|Next/m";
+		$pattern = "/^" . self::LOG_DATE_PATTERN. "\s" . self::LOG_LEVEL_PATTERN. "/m";
 
 		preg_match_all($pattern, $logContent, $matches);
 
@@ -135,33 +112,28 @@ class LaravelLogParser implements LogParserContract
 
 			$headerSet = $matches[0];
 			$dateSet = $matches[1];
-			$envSet = $matches[2];
-			$levelSet = $matches[3];
+			$timeZone = $matches[2];
+			$levelSet = $matches[4];
 		}
 
 		$ordNum = 0;
 
 		foreach ($headerSet as $key => $header) {
 			$ordNum++;
-			$isChildEntry = false;
 
 			if (empty($dateSet[$key])) {
-				$isChildEntry = Str::startsWith($header, "Next");
-
 				$dateSet[$key] = $dateSet[$key-1];
-				$envSet[$key] = $envSet[$key-1];
 				$levelSet[$key] = $levelSet[$key-1];
-				$header = str_replace("Next", $headerSet[$key-1], $header);
+				$header = $headerSet[$key-1];
+				$timeZone = $timeZone[$key-1];
 			}
 
-			$logEntry = new LaravelLogEntry([
-				'environment' => $envSet[$key],
+			$logEntry = new WordPressLogEntry([
 				'level' => $levelSet[$key],
-				'date' => $dateSet[$key],
+				'date' => $this->parseDate(trim($dateSet[$key], '[]'), $timeZone[$key]),
+				'original_date' => trim($dateSet[$key], '[]'),
 				'header' => $header,
-				'is_child_entry' => $isChildEntry,
 				'body' => $bodySet[$key],
-				'children' => collect([]),
 				'ord_num' => $ordNum
 			]);
 
@@ -169,5 +141,16 @@ class LaravelLogParser implements LogParserContract
 		}
 
 		return $logEntries;
+	}
+
+	protected function parseDate($originalDate, $timeZone)
+	{
+		try {
+		    $parsed = Carbon::parse($originalDate, $timeZone);
+		} catch (\Exception $e) {
+			return null;
+		}
+
+		return $parsed->toDateTimeString();
 	}
 }

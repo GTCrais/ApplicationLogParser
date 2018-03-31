@@ -1,6 +1,6 @@
 # Application Log Parser
 
-Application Log Parser is a Laravel package for parsing various application logs. By default it ships with parser for Laravel 4.2+
+Application Log Parser is a Laravel package for parsing various application logs. By default it ships with parser for Laravel 4.2+ and WordPress.
 
 ## Requirements
 
@@ -9,7 +9,7 @@ Application Log Parser is a Laravel package for parsing various application logs
 
 ## Installation
 
-- add `"gtcrais/application-log-parser": "1.0.*"` to your `composer.json` and run `composer update`
+- add `"gtcrais/application-log-parser": "1.1.*"` to your `composer.json` and run `composer update`
 - for Laravel `<=5.4` add `GTCrais\ApplicationLogParser\LogParserServiceProvider::class,` to providers array in `/config/app.php` and run `composer dump-autoload`  
 **Note:** this package has not been tested with Laravel versions prior to `5.5`
 - optionally, run `php artisan vendor:publish --provider=GTCrais\ApplicationLogParser\LogParserServiceProvider`
@@ -29,7 +29,8 @@ Application Log Parser is a Laravel package for parsing various application logs
 
 1. publish the Application Log Parser config file by running  
 `php artisan vendor:publish --provider=GTCrais\ApplicationLogParser\LogParserServiceProvider`
-2. write your log parser class. It must implement `GTCrais\ApplicationLogParser\Contracts\LogParserContract` and return a Collection of Log Entries
+2. write your log parser class. It must implement `GTCrais\ApplicationLogParser\Contracts\LogParserContract` and return a Collection of Log Entries.
+Each `LogEntry` must extend `GTCrais\ApplicationLogParser\LogEntries\BaseLogEntry`
 3. finally, register your platform and its log parser in the config file:  
 ```php
 'platforms' => [

@@ -6,10 +6,9 @@ namespace GTCrais\ApplicationLogParser\LogEntries;
 class BaseLogEntry
 {
 	public $header;
-	public $environment;
 	public $level;
+	public $original_date;
 	public $date;
-	public $is_child_entry;
 	public $body;
 	public $body_parse_level;
 	public $body_parse_level_set = false;
@@ -17,15 +16,21 @@ class BaseLogEntry
 	public $message;
 	public $in;
 	public $line;
-	public $user_id;
-	public $user_email;
-	public $stack_traces;
-	public $children;
+	public $stack_trace_entries;
+	public $ord_num;
 
 	public function __construct(array $data)
 	{
-		$this->children = collect([]);
 		$this->setAttributes($data);
+	}
+
+	public function __get($property)
+	{
+		if (property_exists($this, $property)) {
+			return $this->$property;
+		}
+
+		return null;
 	}
 
 	public function setAttributes(array $data)

@@ -1,41 +1,38 @@
 <?php
 
-namespace GTCrais\ApplicationLogParser\Parsers\Laravel\LogBodyParsers;
+namespace GTCrais\ApplicationLogParser\Parsers\WordPress\LogBodyParsers;
 
-use GTCrais\ApplicationLogParser\LogEntries\LaravelLogEntry;
+use GTCrais\ApplicationLogParser\LogEntries\WordPressLogEntry;
 
 abstract class BaseBodyParser
 {
 	public $contentParsed = false;
 	public $logEntry = null;
 	public $bodyData = [];
-	public $userData = [
-		'user_id' => null,
-		'user_email' => null,
-	];
 
 	const CONTEXT_MESSAGE_PATTERN = "(\swith\smessage\s\'{1}(.*)\'{1})?";
 	const CONTEXT_EXCEPTION_PATTERN = "exception\s\'{1}([^\']+)\'{1}";
 	const STACK_TRACE_DIVIDER_PATTERN = "Stack trace\:";
-	const CONTEXT_IN_PATTERN = "(.+)\:(\d+)";
+	const CONTEXT_IN_PATTERN = "(.+)(\:| on line )(\d+)";
 	const STACK_TRACE_INDEX_PATTERN = "\#\d+\s";
 	const TRACE_IN_DIVIDER_PATTERN = "\:\s";
 	const TRACE_FILE_PATTERN = "(.*)\((\d+)\)";
+	const FAULTY_TRACE_IDENTIFIER = "(thrown in .+ on line \d+)";
 
 	const PARSED_BASIC = 'basic';
 	const PARSED_PARTIALLY = 'partially_parsed';
 	const PARSED_FULLY = 'fully_parsed';
 
-	public function parseBody(LaravelLogEntry $laravelLogEntry)
+	public function parseBody(WordPressLogEntry $wordPressLogEntry)
 	{
-		$this->logEntry = $laravelLogEntry;
+		$this->logEntry = $wordPressLogEntry;
 
 		$stackTraceAndExceptionData = $this->getStackTraceAndExceptionData();
 		$stackTrace = $stackTraceAndExceptionData['stackTrace'];
 		$exceptionAndMessage = $stackTraceAndExceptionData['exceptionData'];
 
 		$delimiter = ' in ';
-		$pattern = '/^' . static::CONTEXT_EXCEPTION_PATTERN . static::CONTEXT_MESSAGE_PATTERN . '$/';
+		$pattern = '/^([a-zA-Z]+\s?)?' . static::CONTEXT_EXCEPTION_PATTERN . static::CONTEXT_MESSAGE_PATTERN . '$/';
 		$inAndLinePattern = '/^' . static::CONTEXT_IN_PATTERN . '$/';
 
 		$this->bodyData = $this->parseExceptionAndMessage($exceptionAndMessage, $delimiter, $pattern, $inAndLinePattern);
@@ -76,18 +73,18 @@ abstract class BaseBodyParser
 
 		preg_match($pattern, trim($exceptionAndMessage), $matches);
 
-		if (isset($matches[1])) {
-			$exception = $matches[1];
-			$message   = $matches[2] ?? null;
-
-			if ($inAndLine) {
-				preg_match($inAndLinePattern, trim($inAndLine), $matches);
-
-				$in = $matches[1] ?? null;
-				$line = $matches[2] ?? null;
-			}
+		if (isset($matches[2])) {
+			$exception = $matches[2];
+			$message   = $matches[4] ?? null;
 		} else {
 			$message = $exceptionAndMessage;
+		}
+
+		if ($inAndLine) {
+			preg_match($inAndLinePattern, trim($inAndLine), $matches);
+
+			$in = $matches[1] ?? null;
+			$line = $matches[3] ?? null;
 		}
 
 		return compact('message', 'exception', 'in', 'line');
@@ -137,6 +134,8 @@ abstract class BaseBodyParser
 
 			$parsedStackTraceEntries = collect($stackTraceEntries)->map(function($stackTraceEntry) {
 				return trim($stackTraceEntry);
+			})->filter(function($stackTraceEntry) {
+				return !preg_match('/' . static::FAULTY_TRACE_IDENTIFIER . '$/', $stackTraceEntry);
 			});
 		}
 
@@ -147,18 +146,8 @@ abstract class BaseBodyParser
 	{
 		if ($this->logEntry) {
 			$this->logEntry->setAttributes($this->bodyData);
-			$this->logEntry->setAttributes($this->userData);
 			$this->logEntry->body_parse_level = $this->contentParsed;
 			$this->logEntry->body_parse_level_set = true;
-
-			if ($this->logEntry->children->count()) {
-				$this->logEntry->children->each(function($child) {
-					if (!$child->body_parse_level_set) {
-						$child->body_parse_level = $this->logEntry->body_parse_level;
-						$child->body_parse_level_set = true;
-					}
-				});
-			}
 		}
 	}
 
@@ -167,9 +156,5 @@ abstract class BaseBodyParser
 		$this->logEntry = null;
 		$this->contentParsed = false;
 		$this->bodyData = [];
-		$this->userData = [
-			'user_id' => null,
-			'user_email' => null,
-		];
 	}
 }
