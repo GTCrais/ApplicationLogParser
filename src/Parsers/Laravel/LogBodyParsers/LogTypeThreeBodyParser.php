@@ -59,7 +59,6 @@ class LogTypeThreeBodyParser extends BaseBodyParser
 		$exceptionData = preg_replace('/\s+/', ' ', $exceptionData);
 
 		$inAndLinePattern = '/^' . self::CONTEXT_IN_PATTERN . '$/';
-
 		$exceptionAndMessagePattern = '/^' . self::CONTEXT_EXCEPTION_PATTERN . self::CONTEXT_MESSAGE_PATTERN . '$/';
 
 		$bodyData = [
@@ -132,7 +131,7 @@ class LogTypeThreeBodyParser extends BaseBodyParser
 	{
 		$children = collect([]);
 
-		foreach ($exceptionsAndMessagesArray as $exceptionAndMessage) {
+		foreach ($exceptionsAndMessagesArray as $counter => $exceptionAndMessage) {
 			$logEntry = new LaravelLogEntry([
 				'environment' => $this->logEntry->environment,
 				'level' => $this->logEntry->level,
@@ -140,7 +139,8 @@ class LogTypeThreeBodyParser extends BaseBodyParser
 				'header' => $this->logEntry->header,
 				'is_child_entry' => true,
 				'body' => null,
-				'children' => collect([])
+				'children' => collect([]),
+				'ord_num' => ($counter + 1)
 			]);
 
 			$logEntry->setAttributes($exceptionAndMessage);
@@ -196,7 +196,7 @@ class LogTypeThreeBodyParser extends BaseBodyParser
 
 	protected function bodyCanBeParsed()
 	{
-		$pattern      = "/^(" . static::STACK_TRACE_DIVIDER_PATTERN . ")/m";
+		$pattern = "/^(" . static::STACK_TRACE_DIVIDER_PATTERN . ")/m";
 		$parts = preg_split($pattern, $this->logEntry->body, -1, PREG_SPLIT_DELIM_CAPTURE);
 
 		if (is_array($parts) && isset($parts[1]) && $parts[1] == "[stacktrace]") {
