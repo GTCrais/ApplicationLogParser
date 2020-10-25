@@ -6,11 +6,11 @@ use GTCrais\ApplicationLogParser\LogEntries\WordPressLogEntry;
 
 class DefaultLogTypeBodyParser extends BaseBodyParser
 {
-    public function parseBody(WordPressLogEntry $wordPressLogEntry)
-    {
-        $this->logEntry = $wordPressLogEntry;
-        $this->bodyData = [
-            'message' => $this->logEntry->body
-        ];
-    }
+	public function parseBody(WordPressLogEntry $wordPressLogEntry)
+	{
+		$this->logEntry = $wordPressLogEntry;
+		$this->bodyData = [
+			'message' => $this->logEntry->body
+		];
+	}
 }
